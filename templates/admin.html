@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - WalkSafe+</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>Admin Dashboard</h2>
+    <p>Welcome, {{ admin }} 👑</p>
+
+    <div class="card">
+      <p><strong>Number of users:</strong> {{ stats.users }}</p>
+      <p><strong>Number of feedbacks:</strong> {{ stats.feedbacks }}</p>
+      <p><strong>Number of emergency alerts:</strong> {{ stats.alerts }}</p>
+      <p><strong>Total routes generated:</strong> {{ stats.routes }}</p>
+    </div>
+
+    <table>
+      <tr><th>Username</th><th>Contacts</th><th>Feedback</th><th>Routes</th><th>Alerts</th></tr>
+      {% for username, data in users.items() %}
+      <tr>
+        <td>{{ username }}</td>
+        <td>{{ data.contacts }}</td>
+        <td>
+          {% for f in data.feedback %}
+            <li>{{ f }}</li>
+          {% endfor %}
+        </td>
+        <td>
+          {% for r in data.routes %}
+            <li>{{ r.source }} → {{ r.destination }} | {{ r.path }} | {{ r.distance }} km | {{ r.time }} mins</li>
+          {% endfor %}
+        </td>
+        <td>
+          {% for a in data.alerts %}
+            <li>{{ a }}</li>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <a href="{{ url_for('logout') }}"><button class="secondary-btn" style="margin-top:1rem;">Logout</button></a>
+  </div>
+</body>
+</html>

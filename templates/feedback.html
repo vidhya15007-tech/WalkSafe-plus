@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Feedback - WalkSafe+</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>💬 Share Your Feedback</h2>
+    <p class="muted">Your feedback helps improve the safety experience.</p>
+    <form method="POST">
+      <textarea name="feedback" placeholder="Tell us about your experience..." rows="5" required></textarea>
+      <button type="submit" class="btn">Submit</button>
+    </form>
+  </div>
+</body>
+</html>

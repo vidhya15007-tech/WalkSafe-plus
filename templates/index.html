@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WalkSafe+ | Home</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container" style="text-align:center;">
+    <h1>� WalkSafe+</h1>
+    <p>Smart women's safety navigation with live location, Dijkstra routing, emergency alerts, and nearby safety support.</p>
+    <div style="margin-top:2rem;">
+      <a href="{{ url_for('signup') }}"><button class="btn">Sign Up</button></a>
+      <a href="{{ url_for('login') }}"><button class="secondary-btn">Login</button></a>
+    </div>
+
+    <form action="{{ url_for('admin_login') }}" method="POST" style="margin-top:2rem;max-width:420px;margin-left:auto;margin-right:auto;">
+      <h3>Admin Login</h3>
+      <input type="text" name="admin_username" placeholder="Admin Username" required>
+      <input type="password" name="admin_password" placeholder="Admin Password" required>
+      <button type="submit" class="btn">Login as Admin</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Up - WalkSafe+</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>Create Your WalkSafe+ Account</h2>
+    <p class="muted">Register to receive route support and emergency contact alerts.</p>
+    {% if error %}
+      <div class="error" style="color:#dc2626; margin-bottom:10px;">{{ error }}</div>
+    {% endif %}
+    <form method="POST">
+      <input type="text" name="username" placeholder="Enter username" required>
+      <input type="password" name="password" placeholder="Enter password" required>
+      <input type="email" name="contact1" placeholder="Emergency Contact 1 (email)" required>
+      <input type="email" name="contact2" placeholder="Emergency Contact 2 (email)" required>
+      <button type="submit" class="btn">Sign Up</button>
+      <a href="{{ url_for('login') }}" style="display:block;margin-top:10px;">Already have an account? Login</a>
+    </form>
+  </div>
+</body>
+</html>

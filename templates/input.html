@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enter Route - WalkSafe+</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>Plan Your Route</h2>
+
+    {% if error %}
+      <p style="color:#b00020; font-weight:bold;">{{ error }}</p>
+    {% endif %}
+
+    <p><strong>Available Chennai locations:</strong> {{ locations | join(', ') }}</p>
+
+    <!-- Current Location -->
+    <div style="margin:20px 0; text-align:center;">
+      <button type="button" id="gpsBtn" class="btn">
+        📍 Use My Current Location
+      </button>
+
+      <p id="gpsStatus" style="margin-top:10px; color:green; font-weight:bold;"></p>
+
+      <!-- Hidden fields -->
+      <input type="hidden" name="current_lat" id="current_lat">
+      <input type="hidden" name="current_lng" id="current_lng">
+    </div>
+
+    <form method="POST">
+
+      <!-- Hidden GPS fields submitted with form -->
+      <input type="hidden" name="current_lat" id="form_current_lat">
+      <input type="hidden" name="current_lng" id="form_current_lng">
+
+      <label for="source">Source</label>
+      <select name="source" id="source" required>
+        {% for location in locations %}
+          <option value="{{ location }}">{{ location }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="destination">Destination</label>
+      <select name="destination" id="destination" required>
+        {% for location in locations %}
+          <option value="{{ location }}">{{ location }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn">Find Route</button>
+
+    </form>
+
+    <a href="{{ url_for('logout') }}"
+       style="display:block;margin-top:15px;color:#5563DE;text-align:center;">
+       Logout
+    </a>
+
+  </div>
+
+<script>
+
+const gpsBtn = document.getElementById("gpsBtn");
+
+gpsBtn.addEventListener("click", function(){
+
+    if(!navigator.geolocation){
+        alert("Geolocation is not supported by your browser.");
+        return;
+    }
+
+    gpsBtn.disabled = true;
+    gpsBtn.innerHTML = "Getting Location...";
+
+    navigator.geolocation.getCurrentPosition(
+
+        function(position){
+
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            document.getElementById("current_lat").value = lat;
+            document.getElementById("current_lng").value = lng;
+
+            document.getElementById("form_current_lat").value = lat;
+            document.getElementById("form_current_lng").value = lng;
+
+            document.getElementById("gpsStatus").innerHTML =
+                "✅ Current Location Captured Successfully";
+
+            gpsBtn.innerHTML = "📍 Location Selected";
+        },
+
+        function(error){
+
+            alert("Unable to access your location.");
+
+            gpsBtn.disabled = false;
+            gpsBtn.innerHTML = "📍 Use My Current Location";
+
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+
+    );
+
+});
+
+</script>
+
+</body>
+</html>

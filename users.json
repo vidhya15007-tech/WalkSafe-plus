@@ -1,0 +1,75 @@
+{
+    "vidhya": {
+        "password": "1234",
+        "contacts": [
+            "vidhyaa1507@gmail.com",
+            "vidhya1507@gmail.com"
+        ],
+        "feedback": [
+            "Safe Journey"
+        ],
+        "routes": [
+            {
+                "source": "Adyar",
+                "destination": "Koyambedu",
+                "path": [
+                    "Anna Nagar",
+                    "Koyambedu"
+                ],
+                "distance": 8.75,
+                "time": 105,
+                "date": "2026-07-24 11:32:12",
+                "gps_used": true
+            },
+            {
+                "source": "Adyar",
+                "destination": "Koyambedu",
+                "path": [
+                    "Anna Nagar",
+                    "Koyambedu"
+                ],
+                "distance": 8.75,
+                "time": 105,
+                "date": "2026-07-24 11:34:42",
+                "gps_used": true
+            },
+            {
+                "source": "Adyar",
+                "destination": "Anna Nagar",
+                "path": [
+                    "Anna Nagar"
+                ],
+                "distance": 7.54,
+                "time": 91,
+                "date": "2026-07-24 11:37:28",
+                "gps_used": true
+            },
+            {
+                "source": "Adyar",
+                "destination": "Anna Nagar",
+                "path": [
+                    "Anna Nagar"
+                ],
+                "distance": 7.54,
+                "time": 91,
+                "date": "2026-07-24 11:37:49",
+                "gps_used": true
+            },
+            {
+                "source": "Adyar",
+                "destination": "Anna Nagar",
+                "path": [
+                    "Anna Nagar"
+                ],
+                "distance": 7.54,
+                "time": 91,
+                "date": "2026-07-24 11:38:24",
+                "gps_used": true
+            }
+        ],
+        "alerts": [
+            "Emergency email sent to ['vidhyaa1507@gmail.com', 'vidhya1507@gmail.com']. Failed: ['vidhyaa1507@gmail.com', 'vidhya1507@gmail.com']",
+            "Emergency email sent to ['vidhyaa1507@gmail.com', 'vidhya1507@gmail.com']. Failed: ['vidhyaa1507@gmail.com', 'vidhya1507@gmail.com']"
+        ]
+    }
+}

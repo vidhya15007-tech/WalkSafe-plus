@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Route Result - WalkSafe+</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>🚦 Route Summary</h2>
+    <div class="card">
+      <p><strong>Source:</strong> {{ source }}</p>
+      <p><strong>Destination:</strong> {{ destination }}</p>
+      <p><strong>Shortest Path (via Dijkstra):</strong> {{ path }}</p>
+      <p><strong>Routing Mode:</strong> {% if gps_used %}GPS-based{% else %}Dropdown-based{% endif %}</p>
+      <p><strong>Total Distance:</strong> {{ route_distance_km }} km</p>
+      <p><strong>Estimated Time:</strong> {{ route_time_minutes }} mins</p>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>🧭 Live Tracking Steps</h3>
+      {% if path|length > 1 %}
+        <ol>
+          {% for i in range(path|length - 1) %}
+            <li><strong>Step {{ i + 1 }}:</strong> {{ path[i] }} → {{ path[i + 1] }}</li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p>Tracking is ready for the route to begin.</p>
+      {% endif %}
+    </div>
+
+    <div style="margin-top:20px;">
+      <a href="{{ url_for('map_page') }}"><button class="btn">View on Map</button></a>
+      <a href="{{ url_for('feedback_page') }}"><button class="secondary-btn">Give Feedback</button></a>
+      <a href="{{ url_for('input_page') }}"><button class="secondary-btn">Back</button></a>
+    </div>
+  </div>
+</body>
+</html>

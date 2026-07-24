@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WalkSafe+ | Smart Safety Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="dashboard-shell">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">Smart Women's Safety Navigation</p>
+                <h1>WalkSafe+ Live Safety Map</h1>
+                <p>{{ source }} → {{ destination }}</p>
+            </div>
+            <div class="topbar-actions">
+                <a href="{{ url_for('input_page') }}" class="secondary-btn">New Route</a>
+                <a href="{{ url_for('routes_page') }}" class="secondary-btn">Route Summary</a>
+            </div>
+        </header>
+
+        <main class="content-grid">
+            <section class="map-card">
+                <div id="safety-map"></div>
+            </section>
+
+            <aside class="info-card">
+                <div class="panel-section">
+                    <h2>🛡 WalkSafe+</h2>
+                    <p class="muted">Live safety intelligence for your route.</p>
+                </div>
+
+                <div class="panel-section">
+                    <h3>📍 Current Location</h3>
+                    <p id="current-location-text">Waiting for GPS permission…</p>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🏁 Destination</h3>
+                    <p>{{ destination }}</p>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🚶 Walking Distance</h3>
+                    <p id="distance-text">{{ route_distance_km }} km</p>
+                </div>
+
+                <div class="panel-section">
+                    <h3>⏱ Estimated Time</h3>
+                    <p id="time-text">{{ route_time_minutes }} mins</p>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🚓 Nearby Police Stations</h3>
+                    <ul id="police-list" class="detail-list"></ul>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🏥 Nearby Hospitals</h3>
+                    <ul id="hospital-list" class="detail-list"></ul>
+                </div>
+
+                <div class="panel-section">
+                    <h3>📧 Emergency Contacts</h3>
+                    <p class="muted">Trusted contacts remain available for instant alerts.</p>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🟢 Route Status</h3>
+                    <p id="route-status">Preparing the safest route…</p>
+                </div>
+
+                <button id="emergency-btn" class="danger-btn">🚨 Trigger Emergency Alert</button>
+            </aside>
+        </main>
+    </div>
+
+    <div id="alert-modal" class="modal hidden">
+        <div class="modal-card">
+            <h3 id="alert-title">Alert Status</h3>
+            <p id="alert-message">Please wait…</p>
+            <button id="modal-close" class="primary-btn">Close</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script id="route-data" type="application/json">{{ {"route_path": route_path, "route_steps": route_steps, "coordinates": coordinates, "route_distance": route_distance or 0, "route_visual": route_visual, "start_coords": start_coords, "end_coords": end_coords, "gps_used": gps_used, "destination": destination, "source": source, "route_distance_km": route_distance_km, "route_time_minutes": route_time_minutes} | tojson | safe }}</script>
+    <script>
+        const rawRouteData = (document.getElementById('route-data').textContent || '{}').replace(/Infinity/g, '0').replace(/NaN/g, '0').replace(/-Infinity/g, '0');
+        const routeData = JSON.parse(rawRouteData);
+        const routePath = Array.isArray(routeData.route_path) ? routeData.route_path : [];
+        const routeVisual = Array.isArray(routeData.route_visual) ? routeData.route_visual : [];
+        const coordinates = routeData.coordinates || {};
+        const destination = routeData.destination || '';
+        const source = routeData.source || '';
+        const startCoords = routeData.start_coords || null;
+        const endCoords = routeData.end_coords || null;
+        const routeDistanceKm = Number(routeData.route_distance_km || 0);
+        const routeTimeMinutes = Number(routeData.route_time_minutes || 0);
+        const gpsUsed = Boolean(routeData.gps_used);
+
+        document.getElementById('distance-text').textContent = `${routeDistanceKm.toFixed(2)} km`;
+        document.getElementById('time-text').textContent = `${routeTimeMinutes} mins`;
+        document.getElementById('route-status').textContent = gpsUsed ? 'GPS-based routing active' : 'Dropdown-based routing active';
+
+        function makeIcon(color, emoji) {
+            return L.divIcon({
+                html: `<div style="background:${color};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;border:2px solid white;">${emoji}</div>`,
+                className: 'custom-div-icon',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+            });
+        }
+
+        async function initMap() {
+            const map = L.map('safety-map').setView([13.05, 80.25], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+            const routeCoords = routePath.map((node) => coordinates[node]).filter(Boolean);
+            const startPoint = startCoords || (routeCoords[0] || [13.0827, 80.2707]);
+            const endPoint = endCoords || (routeCoords[routeCoords.length - 1] || [13.0674, 80.2376]);
+
+            let currentLatLng = [startPoint[0], startPoint[1]];
+            if (navigator.geolocation && !gpsUsed) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    currentLatLng = [position.coords.latitude, position.coords.longitude];
+                    document.getElementById('current-location-text').textContent = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+                    L.marker(currentLatLng, { icon: makeIcon('#2563eb', '📍') }).addTo(map).bindPopup('Current location');
+                    map.setView(currentLatLng, 14);
+                }, function() {
+                    document.getElementById('current-location-text').textContent = 'GPS permission denied. Using selected source.';
+                });
+            } else if (gpsUsed) {
+                document.getElementById('current-location-text').textContent = `${startPoint[0].toFixed(4)}, ${startPoint[1].toFixed(4)}`;
+            } else {
+                document.getElementById('current-location-text').textContent = 'GPS unavailable. Using selected source.';
+            }
+
+            L.marker(currentLatLng, { icon: makeIcon('#10b981', '🧭') }).addTo(map).bindPopup('Current location');
+            L.marker([endPoint[0], endPoint[1]], { icon: makeIcon('#dc2626', '🏁') }).addTo(map).bindPopup(destination);
+
+            if (routeCoords.length > 1) {
+                const dijkstraLine = L.polyline(routeCoords.map((coord) => [coord[0], coord[1]]), { color: '#2563eb', weight: 6, opacity: 0.85 }).addTo(map);
+                dijkstraLine.bindPopup('Dijkstra path');
+            }
+
+            if (routeVisual.length > 1) {
+                const visualLine = L.polyline(routeVisual, { color: '#0f766e', weight: 4, opacity: 0.7, dashArray: '6 6' }).addTo(map);
+                visualLine.bindPopup('Visual walking route');
+            }
+
+            try {
+                const response = await fetch(`/api/safety?lat=${currentLatLng[0]}&lng=${currentLatLng[1]}`);
+                const data = await response.json();
+                const policeList = document.getElementById('police-list');
+                const hospitalList = document.getElementById('hospital-list');
+                policeList.innerHTML = '';
+                hospitalList.innerHTML = '';
+
+                data.police.forEach((place) => {
+                    const item = document.createElement('li');
+                    item.textContent = `${place.name} • ${place.distance} m`;
+                    policeList.appendChild(item);
+                    L.marker([place.lat, place.lng], { icon: makeIcon('#1d4ed8', '🚓') }).addTo(map).bindPopup(`<strong>Police Station</strong><br>Distance: ${place.distance} m`);
+                });
+
+                data.hospitals.forEach((place) => {
+                    const item = document.createElement('li');
+                    item.textContent = `${place.name} • ${place.distance} m`;
+                    hospitalList.appendChild(item);
+                    L.marker([place.lat, place.lng], { icon: makeIcon('#dc2626', '🏥') }).addTo(map).bindPopup(`<strong>Hospital</strong><br>Distance: ${place.distance} m`);
+                });
+
+                if (data.police.length === 0 && data.hospitals.length === 0) {
+                    policeList.innerHTML = '<li>No nearby police stations found.</li>';
+                    hospitalList.innerHTML = '<li>No nearby hospitals found.</li>';
+                }
+            } catch (error) {
+                document.getElementById('police-list').innerHTML = '<li>Safety data unavailable.</li>';
+                document.getElementById('hospital-list').innerHTML = '<li>Safety data unavailable.</li>';
+            }
+
+            const bounds = L.latLngBounds([currentLatLng, [endPoint[0], endPoint[1]]]);
+            map.fitBounds(bounds.pad(0.25));
+
+            const legend = L.control({ position: 'bottomright' });
+            legend.onAdd = function() {
+                const div = L.DomUtil.create('div', 'legend');
+                div.innerHTML = '<h4>Legend</h4><div>🧭 Current Location</div><div>🏁 Destination</div><div>🚓 Police Station</div><div>🏥 Hospital</div><div>🔵 Dijkstra Route</div><div>🟢 Visual Route</div>';
+                return div;
+            };
+            legend.addTo(map);
+        }
+
+        document.getElementById('emergency-btn').addEventListener('click', async function() {
+            const modal = document.getElementById('alert-modal');
+            const title = document.getElementById('alert-title');
+            const message = document.getElementById('alert-message');
+            title.textContent = 'Alert Status';
+            message.textContent = 'Sending emergency alert…';
+            modal.classList.remove('hidden');
+            try {
+                const response = await fetch('/alert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    title.textContent = 'Emergency Alert Sent Successfully';
+                    message.textContent = data.message || 'Trusted contacts were notified.';
+                } else {
+                    title.textContent = 'Failed to Send Alert';
+                    message.textContent = data.message || data.reason || 'Please try again.';
+                }
+            } catch (error) {
+                title.textContent = 'Failed to Send Alert';
+                message.textContent = 'The alert service is unavailable right now.';
+            }
+        });
+
+        document.getElementById('modal-close').addEventListener('click', function() {
+            document.getElementById('alert-modal').classList.add('hidden');
+        });
+
+        initMap();
+    </script>
+</body>
+</html>
+        function resumeLiveTracking() {
+            isLiveTracking = true;
+            startLiveTracking();
+            if (nextPointButton) nextPointButton.textContent = 'Pause Tracking';
+        }
+
+        renderMap();
+        renderTrackingSteps();
+        updateNextStep(0);
+        updateEtaDisplay();
+        moveLiveMarker(0);
+        startLiveTracking();
+        if (nextPointButton) nextPointButton.textContent = 'Pause Tracking';
+
+        if (nextPointButton) {
+            nextPointButton.addEventListener('click', function () {
+                if (isLiveTracking) {
+                    stopLiveTracking();
+                } else {
+                    resumeLiveTracking();
+                }
+            });
+        }
+
+        setInterval(() => {
+            if (etaSeconds > 0) {
+                etaSeconds = Math.max(0, etaSeconds - 1);
+                updateEtaDisplay();
+            }
+        }, 1000);
+
+        const alertButton=document.getElementById('alert-button-map');
+        const alertModal=document.getElementById('alert-modal-map');
+        const alertMessage=document.getElementById('alert-message-map');
+        const alertTitle=document.getElementById('alert-title-map');
+        const alertClose=document.getElementById('alert-close-map');
+
+        function showMessage(title,msg){
+            alertTitle.textContent=title;
+            alertMessage.textContent=msg;
+            alertModal.classList.remove('hidden');
+            alertModal.classList.add('flex');
+            alertModal.style.display = 'flex';
+            alertModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeMessage(){
+            alertModal.classList.add('hidden');
+            alertModal.classList.remove('flex');
+            alertModal.style.display = 'none';
+            alertModal.setAttribute('aria-hidden', 'true');
+        }
+
+        async function triggerEmergencyAlert(){
+            showMessage('Emergency Alert','Triggering your live safety popup...');
+            alertButton.disabled=true;
+            alertButton.textContent='Sending...';
+            try{
+                const res=await fetch('{{ url_for("alert") }}',{method:'POST',headers:{'Content-Type':'application/json'}});
+                const data=await res.json();
+                if(data.status==='success') {
+                    const detail = data.message || 'Emergency alert successfully triggered and your route is protected.';
+                    showMessage('Alert Triggered', detail);
+                } else if(data.status==='partial') {
+                    const detail = data.message || 'Emergency alert was sent to available contacts.';
+                    showMessage('Emergency Notice', detail);
+                } else {
+                    showMessage('Error', data.reason || 'Unknown error occurred.');
+                }
+            }catch(err){ showMessage('Network Notice','Emergency popup opened. Your route remains live and protected.'); }
+            finally{
+                alertButton.disabled=false;
+                alertButton.innerHTML='<svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.457-1.42 1.954-2.905l-6.923-14.885c-.503-1.084-2.28-1.084-2.783 0L5.004 16.095c-.503 1.485.414 2.905 1.954 2.905z"></path></svg>EMERGENCY ALERT';
+            }
+        }
+
+        window.triggerEmergencyAlert = triggerEmergencyAlert;
+        alertButton.addEventListener('click', function(event){
+            event.preventDefault();
+            triggerEmergencyAlert();
+        });
+        alertClose.addEventListener('click', closeMessage);
+    </script>
+</body>
+</html>
